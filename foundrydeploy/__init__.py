@@ -1,4 +1,3 @@
-
 class KeyKind:
     TREZOR = "--trezor"
     LEDGER = "--ledger"
@@ -9,6 +8,8 @@ class Network:
     LOCAL: str = "--rpc-url http://127.0.0.1:8545"
     AVAX_MAIN: str = "--rpc-url https://api.avax.network/ext/bc/C/rpc"
     AVAX_TEST: str = "--rpc-url https://api.avax-test.network/ext/bc/C/rpc"
+
+    networks = {"ava": AVAX_MAIN, "fuji": AVAX_TEST, "local": LOCAL}
 
 
 class Signer:
@@ -32,4 +33,4 @@ TEST_SIGNER = Signer(
     "4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d",
 )
 
-from .deploy import *
+from .deployer import *
