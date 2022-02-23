@@ -98,7 +98,7 @@ def deployer_from_context(context: dict, contracts: list):
     elif "ganache" == signer:
         signer = TEST_SIGNER
     else:
-        signer = signers[signer]
+        signer = SIGNERS[signer]
 
     network = context[SECTION_DEPLOYER_NETWORK]
     if network.startswith("http"):
