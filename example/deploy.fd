@@ -5,11 +5,20 @@ LABEL1 "src/Contract1.sol:ContractName1" 0x1111111111111111111111111111111111111
 LABEL2 "src/Contract2.sol:ContractName2"
 LABEL3 0x2222222222222222222222222222222222222222
 
-.signer mySigner
+.signer mySigner1
 private 4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d
 # pub 0x3333333333333333333333333333333333333333
 
-.deployer myDeployer
+.signer mySigner2
+private 4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d
+# pub 0x3333333333333333333333333333333333333333
+
+.deployer myDeployer1
+legacy
+signer mySigner2
+network local
+
+.deployer myDeployer2
 legacy
 # no_cache
 # debug
@@ -18,12 +27,11 @@ network local
 # network fuji
 # network ava
 
-signer mySigner
-# signer ganache
+signer ganache
 # signer ledger
 # signer trezor
 
-.use myDeployer
+.use myDeployer1
 
 # Skips deploy and send
 skip_start
@@ -36,6 +44,9 @@ deploy LABEL2 (#PUB, arg2, 1gwei)
 
 # Valid
 send LABEL2 functionName(99999)
+
+.use myDeployer2
+
 send LABEL2 functionName (99999)
 send LABEL2 functionName(uint256) (99999)
 
