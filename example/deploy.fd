@@ -10,13 +10,18 @@ private 4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d
 # pub 0x3333333333333333333333333333333333333333
 
 .deployer myDeployer
-network local
-# network fuji
-signer ganache
-# signer mySigner
 legacy
 # no_cache
 # debug
+
+network local
+# network fuji
+# network ava
+
+signer mySigner
+# signer ganache
+# signer ledger
+# signer trezor
 
 .use myDeployer
 
