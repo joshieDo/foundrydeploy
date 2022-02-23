@@ -21,8 +21,8 @@ class Deployer:
         name="",
     ):
         print("#####")
+        self.name = name
         if len(name) > 0:
-            self.name = name
             print(f"# Deployer: `{name}`")
 
         print(f"# RPC: `{rpc}`")

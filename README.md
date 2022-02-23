@@ -2,6 +2,8 @@
 
 Basic python wrapper around `forge create` and `cast send` from [foundry](https://github.com/gakonst/foundry) for a basic deployment pipeline with caching capabilities.
 
+**Extended with a basic limited scripting language  [example/deploy.fd](./example/deploy.fd)**
+
 **Deployment script should be called from the foundry project with the build artifacts present at `out/`.**
 
 ## Summary
@@ -24,9 +26,15 @@ Still early, so test on a local network first.
 pip install foundrydeploy
 ```
 
-## Example
+## Usage
+### FD Script
+#### deploy.fd
+```bash
+$ python -m foundrydeploy deploy.fd
+```
+### As a python library
 
-### deploy.py
+#### deploy.py
 ```python
 from foundrydeploy import Network, Deployer, TEST_SIGNER
 
