@@ -18,8 +18,13 @@ class Deployer:
         debug=False,
         cache_path="cache",
         no_cache=False,
+        name="",
     ):
         print("#####")
+        if len(name) > 0:
+            self.name = name
+            print(f"# Deployer: `{name}`")
+
         print(f"# RPC: `{rpc}`")
 
         self.rpc = rpc
@@ -30,7 +35,9 @@ class Deployer:
 
         # Load from cache if it exists
         self.cache_path = (
-            cache_path + "/deploy_" + hashlib.sha256(rpc.encode()).hexdigest()[:8]
+            cache_path
+            + "/deploy_"
+            + hashlib.sha256((name + rpc).encode()).hexdigest()[:8]
         )
         if not no_cache:
             self.load_from_cache(self.cache_path)
@@ -219,7 +226,7 @@ class Deployer:
         for arg in args:
             const += f"--constructor-args {self._handle_arg(arg)} "
 
-        print(f"Deploying | ${contract_label}...")
+        print(f"{self.name} | Deploying | ${contract_label}...")
 
         # Call `forge create`
         result = self.run(
@@ -248,7 +255,7 @@ class Deployer:
         else:
             _args[0] = '"' + function_name + '"'
 
-        print(f"Sending   | ${contract_label} {function_name}(...) ")
+        print(f"{self.name} | Sending   | ${contract_label} {function_name}(...) ")
 
         # Stringify arguments
         args = ""

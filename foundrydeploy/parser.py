@@ -14,6 +14,19 @@ CONTEXT = {}
 #####################
 
 
+def _sharing_is_caring():
+    """
+    Makes sure all deployers have access to all deployed addresses
+    """
+    addresses = {}
+
+    for deployer in DEPLOYERS.keys():
+        addresses.update(DEPLOYERS[deployer].addresses)
+
+    for deployer in DEPLOYERS.keys():
+        DEPLOYERS[deployer].addresses.update(addresses)
+
+
 def _load_arguments(is_send: bool, arguments: list):
     args = []
     if is_send:
@@ -105,7 +118,7 @@ def signer_from_context(context: dict):
     return Signer(pub, KeyKind.PRIVATE, context[SECTION_SIGNER_PRIV])
 
 
-def deployer_from_context(context: dict, contracts: list):
+def deployer_from_context(context: dict, contracts: list, name: str):
 
     signer = context[SECTION_DEPLOYER_SIGNER]
 
@@ -137,6 +150,7 @@ def deployer_from_context(context: dict, contracts: list):
         no_cache=(
             SECTION_DEPLOYER_NO_CACHE in context
         ),  # todo if True, prints the calling commands and raw output
+        name=name,
     )
 
 
@@ -165,6 +179,8 @@ def parse(script: str):
         try:
             line = line.strip()
 
+            _sharing_is_caring()
+
             # Skip if comment or line is empty
             if len(line) == 0 or line.startswith("#"):
                 continue
@@ -189,6 +205,7 @@ def parse(script: str):
                         DEPLOYERS[current_section_name] = deployer_from_context(
                             context[SECTION_DEPLOYER][current_section_name],
                             context[SECTION_CONTRACTS],
+                            current_section_name,
                         )
 
                     elif current_section == SECTION_PATH:
