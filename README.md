@@ -2,11 +2,11 @@
 
 Basic python wrapper around `forge create` and `cast send` from [foundry](https://github.com/gakonst/foundry) for a basic deployment pipeline with caching capabilities.
 
-**Extended with a basic limited scripting language  [example/deploy.fd](./example/deploy.fd)**
+**Added a very limited scripting language FD on top:  [example/deploy.fd](./example/deploy.fd)**
 
 **Deployment script should be called from the foundry project with the build artifacts present at `out/`.**
 
-## Summary
+## Description
 
 Basic features:
 * (deploy) Deployments map the resulting address to the given label, which can be used later on.
@@ -31,6 +31,25 @@ pip install foundrydeploy
 #### deploy.fd
 ```bash
 $ python -m foundrydeploy deploy.fd
+```
+
+deploy.fd
+```
+.id
+
+.contracts
+    LABEL1 "src/Contract1.sol:ContractName1" 0x1111111111111111111111111111111111111111
+    LABEL2 "src/Contract2.sol:ContractName2"
+    LABEL3 0x2222222222222222222222222222222222222222
+
+.deployer myDeployer2
+    legacy
+    network local
+    signer ganache
+
+.use myDeployer2
+    send LABEL2 functionName (99999)
+    send LABEL2 functionName(uint256) (99999)
 ```
 ### As a python library
 
