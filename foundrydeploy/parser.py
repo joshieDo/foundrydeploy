@@ -7,6 +7,7 @@ from . import Signer, Network, TEST_SIGNER, KeyKind, Deployer
 
 SIGNERS = {}
 DEPLOYERS = {}
+CONTEXT = {}
 
 #####################
 # Helpers
@@ -75,18 +76,18 @@ def tokenize(line: str):
 #####################
 
 
-def signer_from_details(details: dict):
-    if SECTION_SIGNER_PUB in details:
-        pub = details[SECTION_SIGNER_PUB]
+def signer_from_context(context: dict):
+    if SECTION_SIGNER_PUB in context:
+        pub = context[SECTION_SIGNER_PUB]
     else:
         pub = ""
 
-    return Signer(pub, KeyKind.PRIVATE, details[SECTION_SIGNER_PRIV])
+    return Signer(pub, KeyKind.PRIVATE, context[SECTION_SIGNER_PRIV])
 
 
-def deployer_from_details(details: dict, contracts: list):
+def deployer_from_context(context: dict, contracts: list):
 
-    signer = details[SECTION_DEPLOYER_SIGNER]
+    signer = context[SECTION_DEPLOYER_SIGNER]
 
     if type(signer) == str and signer.startswith("0x"):
         signer = Signer("", KeyKind.PRIVATE, signer)
@@ -99,7 +100,7 @@ def deployer_from_details(details: dict, contracts: list):
     else:
         signer = signers[signer]
 
-    network = details[SECTION_DEPLOYER_NETWORK]
+    network = context[SECTION_DEPLOYER_NETWORK]
     if network.startswith("http"):
         network = f"--rpc-url {network}"
     else:
@@ -109,7 +110,7 @@ def deployer_from_details(details: dict, contracts: list):
         network,
         signer,
         contracts,
-        is_legacy=SECTION_DEPLOYER_LEGACY in details,  # for legacy transactions
+        is_legacy=SECTION_DEPLOYER_LEGACY in context,  # for legacy transactions
         # debug = SECTION_DEPLOYER_LEGACY in global, # todo if True, prints the calling commands and raw output
     )
 
@@ -123,7 +124,7 @@ def parse(script: str):
 
     next_section = 0
 
-    details = {}
+    context = {}
     paths = []
     missing_fields = []
 
@@ -158,14 +159,14 @@ def parse(script: str):
                 section = tokens[0]
                 if section in SECTIONS:
                     if current_section == SECTION_SIGNER:
-                        SIGNERS[current_section_name] = signer_from_details(
-                            details[SECTION_SIGNER][current_section_name]
+                        SIGNERS[current_section_name] = signer_from_context(
+                            context[SECTION_SIGNER][current_section_name]
                         )
 
                     elif current_section == SECTION_DEPLOYER:
-                        DEPLOYERS[current_section_name] = deployer_from_details(
-                            details[SECTION_DEPLOYER][current_section_name],
-                            details[SECTION_CONTRACTS],
+                        DEPLOYERS[current_section_name] = deployer_from_context(
+                            context[SECTION_DEPLOYER][current_section_name],
+                            context[SECTION_CONTRACTS],
                         )
 
                     elif current_section == SECTION_PATH:
@@ -186,21 +187,21 @@ def parse(script: str):
             #####################
             if current_section == SECTION_ID:
                 # ".id FILE_ID"
-                details[SECTION_ID] = _name_check(current_section, tokens)
+                context[SECTION_ID] = _name_check(current_section, tokens)
 
             #####################
             # CONTRACTS
             #####################
 
             elif current_section == SECTION_CONTRACTS:
-                if SECTION_DEPLOYER in details:
+                if SECTION_DEPLOYER in context:
                     raise ValueError(
                         "All contracts need to be declared before any deployer is declared."
                     )
 
                 if line.startswith(SECTION_CONTRACTS):
-                    if SECTION_CONTRACTS not in details:
-                        details[SECTION_CONTRACTS] = []
+                    if SECTION_CONTRACTS not in context:
+                        context[SECTION_CONTRACTS] = []
                 else:
                     num_tokens = len(tokens)
                     if num_tokens < 2 or num_tokens > 3:
@@ -215,7 +216,7 @@ def parse(script: str):
                             tokens.append(tokens[1])
                         tokens[1] = ""
 
-                    details[SECTION_CONTRACTS].append(tokens)
+                    context[SECTION_CONTRACTS].append(tokens)
 
             #####################
             # SIGNER
@@ -227,20 +228,20 @@ def parse(script: str):
                 # public 0x1123123123
                 if line.startswith(SECTION_SIGNER):
 
-                    if SECTION_SIGNER not in details:
-                        details[SECTION_SIGNER] = {}
+                    if SECTION_SIGNER not in context:
+                        context[SECTION_SIGNER] = {}
 
                     missing_fields = SECTION_SIGNER_REQUIRED
                     current_section_name = _name_check(current_section, tokens)
-                    details[SECTION_SIGNER][current_section_name] = {}
+                    context[SECTION_SIGNER][current_section_name] = {}
 
                 elif line.startswith(SECTION_SIGNER_PRIV):
-                    details[SECTION_SIGNER][current_section_name][
+                    context[SECTION_SIGNER][current_section_name][
                         SECTION_SIGNER_PRIV
                     ] = tokens[1]
 
                 elif line.startswith(SECTION_SIGNER_PUB):
-                    details[SECTION_SIGNER][current_section_name][
+                    context[SECTION_SIGNER][current_section_name][
                         SECTION_SIGNER_PUB
                     ] = tokens[1]
                 else:
@@ -257,25 +258,25 @@ def parse(script: str):
                 # network local | avax | fuji | http...
                 # signer local | test | trezor | ledger
                 # legacy
-                if SECTION_CONTRACTS not in details:
+                if SECTION_CONTRACTS not in context:
                     raise ValueError(
                         "You need to declare contracts before declaring a deployer."
                     )
 
                 if line.startswith(SECTION_DEPLOYER):
-                    if SECTION_DEPLOYER not in details:
-                        details[SECTION_DEPLOYER] = {}
+                    if SECTION_DEPLOYER not in context:
+                        context[SECTION_DEPLOYER] = {}
 
                     missing_fields = SECTION_DEPLOYER_REQUIRED
                     current_section_name = _name_check(current_section, tokens)
-                    details[SECTION_DEPLOYER][current_section_name] = {}
+                    context[SECTION_DEPLOYER][current_section_name] = {}
 
                 elif line.startswith(SECTION_DEPLOYER_NETWORK):
                     network = tokens[1]
                     if network in SECTION_DEPLOYER_NETWORKS or network.startswith(
                         "http"
                     ):
-                        details[SECTION_DEPLOYER][current_section_name][
+                        context[SECTION_DEPLOYER][current_section_name][
                             SECTION_DEPLOYER_NETWORK
                         ] = network
                     else:
@@ -287,10 +288,10 @@ def parse(script: str):
                     signer = tokens[1]
                     if (
                         signer in SECTION_DEPLOYER_SIGNERS
-                        or signer in details[SECTION_DEPLOYER].keys()
+                        or signer in context[SECTION_DEPLOYER].keys()
                         or signer.startswith("0x")
                     ):
-                        details[SECTION_DEPLOYER][current_section_name][
+                        context[SECTION_DEPLOYER][current_section_name][
                             SECTION_DEPLOYER_SIGNER
                         ] = signer
                     else:
@@ -299,7 +300,7 @@ def parse(script: str):
                         )
 
                 elif line.startswith(SECTION_DEPLOYER_LEGACY):
-                    details[SECTION_DEPLOYER][current_section_name][
+                    context[SECTION_DEPLOYER][current_section_name][
                         SECTION_DEPLOYER_LEGACY
                     ] = True
 
@@ -318,8 +319,8 @@ def parse(script: str):
                     raise ValueError(f"you need a deployer for .use")
 
                 if line.startswith(SECTION_PATH):
-                    if SECTION_PATH not in details:
-                        details[SECTION_PATH] = {}
+                    if SECTION_PATH not in context:
+                        context[SECTION_PATH] = {}
 
                     deployer_name = _name_check(
                         current_section, tokens, "deployer name"
