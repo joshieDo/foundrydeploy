@@ -20,14 +20,14 @@ Still early, so test on a local network first.
 
 ### Install
 
-```
+```bash
 pip install foundrydeploy
 ```
 
 ## Example
 
-### script
-```
+### deploy.py
+```python
 from foundrydeploy import Network, Deployer, TEST_SIGNER
 
 contracts = [
@@ -74,12 +74,16 @@ path = [
 
 deployer.path(path)
 ```
-### result
-```
-> example $ python deploy.py
+
+### Usage
+
+```bash
+$ python deploy.py
 ```
 
-### First Time
+### Output
+
+#### First Time
 ```
 #####
 # RPC: `--rpc-url http://127.0.0.1:8545`
@@ -94,7 +98,7 @@ Sending   | $LABEL2 functionName(...)
  {'LABEL1': '0x1111111111111111111111111111111111111111', 'LABEL3': '0x2222222222222222222222222222222222222222', 'LABEL2': '0xc89ce4735882c9f0f0fe26686c53074e09b0d550'}
 ```
 
-### Second Time
+#### Second Time
 ```
 #####
 # RPC: `--rpc-url http://127.0.0.1:8545`
@@ -109,4 +113,4 @@ Sending   | $LABEL2 functionName(...)
  {'LABEL1': '0x1111111111111111111111111111111111111111', 'LABEL3': '0x2222222222222222222222222222222222222222', 'LABEL2': '0xc89ce4735882c9f0f0fe26686c53074e09b0d550'}
 ```
 
-### On error
+#### On error
