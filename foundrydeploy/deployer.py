@@ -17,6 +17,7 @@ class Deployer:
         is_legacy: bool,
         debug=False,
         cache_path="cache",
+        no_cache=False,
     ):
         print("#####")
         print(f"# RPC: `{rpc}`")
@@ -25,28 +26,40 @@ class Deployer:
         self.contracts = {}
         self.addresses = {}
         self.contract_signatures = {}
+        self.transactions = []
 
         # Load from cache if it exists
         self.cache_path = (
             cache_path + "/deploy_" + hashlib.sha256(rpc.encode()).hexdigest()[:8]
         )
-        self.load_from_cache(self.cache_path)
+        if not no_cache:
+            self.load_from_cache(self.cache_path)
 
         # Add/Replace cached values
         self.add_contracts(contracts)
         self.signer = signer
         self.debug = debug
 
+        self.is_legacy = ""
         if is_legacy:
             self.is_legacy = "--legacy"
+
         print("#####\n")
 
     ###########################
     # Helpers
     ###########################
 
-    def print(self, sigs: bool = False):
-        print(f"\n##\n {self.addresses}")
+    def print_details(self, sigs: bool = False):
+        print(
+            f"""\n
+# Transaction Sequence
+{self.transactions}
+
+# Addresses
+{self.addresses}"""
+        )
+
         if sigs:
             print(self.contracts)
             print(self.contract_signatures)
@@ -73,6 +86,7 @@ class Deployer:
             self.contracts = deployer.contracts
             self.addresses = deployer.addresses
             self.contract_signatures = deployer.contract_signatures
+            self.transactions = self.transactions
 
         except FileNotFoundError:
             print(f"# Starting cache at `{cache_path}`")
@@ -161,7 +175,7 @@ class Deployer:
         if not proc.returncode == 0:
             self.save()
             print(f"FAILED:\n{cmd}\n\n###\n\n{result}\n\r")
-            self.print()
+            self.print_details()
             exit(1)
 
         return result
@@ -169,6 +183,22 @@ class Deployer:
     ###########################
     # Foundry Calls
     ###########################
+
+    def _store_transaction_details(self, contract_label: str, output: str):
+        # Store deployed address
+        address = ""
+        for line in output.splitlines():
+            if "Deployed to: " in line:
+                address = line[-42:]
+                self.addresses[contract_label] = address
+
+            if "Transaction hash: " in line:
+                tx = line[-66:]
+                self.transactions.append(tx)
+
+            if "transactionHash" in line:
+                tx = line[-67:][:-1]
+                self.transactions.append(tx)
 
     def deploy(self, contract_label: str, args: str) -> str:
         """
@@ -196,19 +226,7 @@ class Deployer:
             f"forge create {self.rpc} {self.is_legacy} {self.signer.get()} {contract_path} {const}"
         )
 
-        # Store deployed address
-        address = ""
-        for line in result.splitlines():
-            if "Deployed to: " in line:
-                address = line[-42:]
-                break
-
-        if address == "":
-            raise ValueError("address not sucessfully parsed")
-
-        self.addresses[contract_label] = address
-
-        return address
+        self._store_transaction_details(contract_label, result)
 
     def send(self, contract_label: str, address: str, _args: str) -> str:
         """
@@ -217,12 +235,18 @@ class Deployer:
 
         contract_path = self.contracts[contract_label]
 
-        # Get function signature
         function_name = _args[0]
-        if function_name not in self.contract_signatures[contract_path]:
-            raise ValueError(f"{function_name} does not exist in {self.contract_path}")
 
-        _args[0] = '"' + self.contract_signatures[contract_path][function_name] + '"'
+        # Get function signature if not given
+        if "(" not in function_name:
+            if function_name not in self.contract_signatures[contract_path]:
+                raise ValueError(f"{function_name} does not exist in {contract_path}")
+
+            _args[0] = (
+                '"' + self.contract_signatures[contract_path][function_name] + '"'
+            )
+        else:
+            _args[0] = '"' + function_name + '"'
 
         print(f"Sending   | ${contract_label} {function_name}(...) ")
 
@@ -231,9 +255,11 @@ class Deployer:
         for index, arg in enumerate(_args):
             args += f" {self._handle_arg(arg)} "
 
-        self.run(
+        result = self.run(
             f"cast send {address} {self.rpc} {self.is_legacy} {self.signer.get()} {args}"
         )
+
+        self._store_transaction_details(contract_label, result)
 
     ###########################
     # Action Flow
@@ -268,6 +294,12 @@ class Deployer:
             if skipping:
                 continue
             elif action == Deployer.SEND:
+
+                if contract_contract_label not in self.addresses:
+                    raise ValueError(
+                        f"{contract_contract_label} has not been deployed."
+                    )
+
                 self.send(
                     contract_contract_label,
                     self.addresses[contract_contract_label],
@@ -277,4 +309,4 @@ class Deployer:
                 self.deploy(contract_contract_label, arguments)
 
         self.save()
-        self.print()
+        self.print_details()

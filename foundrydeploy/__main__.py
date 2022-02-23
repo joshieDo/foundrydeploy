@@ -1,4 +1,4 @@
-from .lexer import parse
+from .parser import parse
 import os, sys
 
 if len(sys.argv) == 1:
@@ -10,3 +10,4 @@ with open(sys.argv[1], "r") as f:
         parse(f.read())
     except ValueError as e:
         print(e)
+        raise e

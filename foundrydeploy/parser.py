@@ -17,10 +17,16 @@ CONTEXT = {}
 def _load_arguments(is_send: bool, arguments: list):
     args = []
     if is_send:
-        # function name
-        args.append(arguments[0])
-        # function args
-        arguments = arguments[1]
+
+        if len(arguments) == 1 and is_send:
+            tokens = arguments[0].split("(")
+            function_name = tokens[0]
+            arguments = "(" + tokens[1]
+        else:
+            function_name = arguments[0]
+            arguments = arguments[1]
+
+        args.append(function_name)
 
     if not arguments.startswith("(") or not arguments.endswith(")"):
         raise ValueError(f"arguments which should start with `(` and end with `)`")
@@ -29,6 +35,13 @@ def _load_arguments(is_send: bool, arguments: list):
 
     for arg in arguments:
         arg = arg.strip()
+
+        # check if * is present
+        # 00*2 -> 0000
+        str_repetition = arg.split("*")
+        if len(str_repetition) > 1:
+            arg = str_repetition[0].strip() * int(str_repetition[1].strip())
+
         args.append(arg)
     return args
 
@@ -51,23 +64,30 @@ def _remove_field(field: str, missing_fields: list):
 
 def tokenize(line: str):
     tokens = []
-    skip = False
+
+    NO_SKIP = ""
+    close_skip = NO_SKIP
 
     token = ""
     length = len(line)
     for (index, ch) in enumerate(line):
-        if ch == '"':
-            skip = not skip
-        elif ch == " " and not skip:
+
+        if close_skip == NO_SKIP and ch == '"':
+            close_skip = ch
+        if close_skip == NO_SKIP and ch == "(":
+            close_skip = ")"
+        elif ch == close_skip:
+            close_skip = NO_SKIP
+
+        if ch == " " and close_skip == NO_SKIP:
             tokens.append(token)
             token = ""
         else:
             token += ch
+
         if index == length - 1:
             tokens.append(token)
 
-    # print('tokens')
-    # print(tokens)
     return tokens
 
 
@@ -110,8 +130,13 @@ def deployer_from_context(context: dict, contracts: list):
         network,
         signer,
         contracts,
-        is_legacy=SECTION_DEPLOYER_LEGACY in context,  # for legacy transactions
-        # debug = SECTION_DEPLOYER_LEGACY in global, # todo if True, prints the calling commands and raw output
+        is_legacy=(SECTION_DEPLOYER_LEGACY in context),  # for legacy transactions
+        debug=(
+            SECTION_DEPLOYER_DEBUG in context
+        ),  # todo if True, prints the calling commands and raw output
+        no_cache=(
+            SECTION_DEPLOYER_NO_CACHE in context
+        ),  # todo if True, prints the calling commands and raw output
     )
 
 
@@ -136,12 +161,9 @@ def parse(script: str):
     lines = script.split("\n")
     num_lines = len(lines)
     for (linenu, line) in enumerate(lines):
+        linenu += 1
         try:
             line = line.strip()
-
-            if (linenu == num_lines - 1) and current_section == SECTION_PATH:
-                if type(current_deployer) != str:
-                    current_deployer.path(current_path)
 
             # Skip if comment or line is empty
             if len(line) == 0 or line.startswith("#"):
@@ -270,7 +292,14 @@ def parse(script: str):
                     missing_fields = SECTION_DEPLOYER_REQUIRED
                     current_section_name = _name_check(current_section, tokens)
                     context[SECTION_DEPLOYER][current_section_name] = {}
-
+                elif line.startswith(SECTION_DEPLOYER_NO_CACHE):
+                    context[SECTION_DEPLOYER][current_section_name][
+                        SECTION_DEPLOYER_NO_CACHE
+                    ] = True
+                elif line.startswith(SECTION_DEPLOYER_DEBUG):
+                    context[SECTION_DEPLOYER][current_section_name][
+                        SECTION_DEPLOYER_DEBUG
+                    ] = True
                 elif line.startswith(SECTION_DEPLOYER_NETWORK):
                     network = tokens[1]
                     if network in SECTION_DEPLOYER_NETWORKS or network.startswith(
@@ -288,7 +317,7 @@ def parse(script: str):
                     signer = tokens[1]
                     if (
                         signer in SECTION_DEPLOYER_SIGNERS
-                        or signer in context[SECTION_DEPLOYER].keys()
+                        or signer in SIGNERS
                         or signer.startswith("0x")
                     ):
                         context[SECTION_DEPLOYER][current_section_name][
@@ -353,4 +382,14 @@ def parse(script: str):
                             f"error at line({linenu}) | section: {current_section} "
                         )
         except Exception as e:
-            raise ValueError(f"##\nerror\nline:{linenu}\n{line}\n{e}")
+            if linenu != num_lines:
+                raise ValueError(f"##\nerror:\nline:{linenu}\n{line}\n{e}")
+            raise ValueError(f"##\nerror:\n{e}")
+
+    try:
+        if current_section == SECTION_PATH:
+            if type(current_deployer) != str and len(current_path) > 0:
+                current_deployer.path(current_path)
+    except Exception as e:
+        print(current_path)
+        raise ValueError(f"##\nerror:\n{e}")

@@ -1,0 +1,38 @@
+.id whatever
+
+.contracts
+LABEL1 "src/Contract1.sol:ContractName1" 0x1111111111111111111111111111111111111111
+LABEL2 "src/Contract2.sol:ContractName2"
+LABEL3 0x2222222222222222222222222222222222222222
+
+.signer mySigner
+private 4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d
+# pub 0x3333333333333333333333333333333333333333
+
+.deployer myDeployer
+network local
+# network fuji
+signer ganache
+# signer mySigner
+legacy
+# no_cache
+# debug
+
+.use myDeployer
+
+# Skips deploy and send
+skip_start
+deploy LABEL1 (Arg1, Arg2, 11ether)
+send LABEL1 functionName (9999999999, 00 * 32, 00 * 32, 0)
+skip_end
+
+deploy LABEL2 ($LABEL1, arg2, 1gwei)
+deploy LABEL2 (#PUB, arg2, 1gwei)
+
+# Valid
+send LABEL2 functionName(99999)
+send LABEL2 functionName (99999)
+send LABEL2 functionName(uint256) (99999)
+
+# Invalid
+# send LABEL2 functionName(uint256)(99999)
