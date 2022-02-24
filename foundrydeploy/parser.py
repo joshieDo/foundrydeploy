@@ -375,12 +375,15 @@ def parse(script: str):
                     if SECTION_DECLARATIONS not in context:
                         context[SECTION_DECLARATIONS] = {}
                 else:
-                    if len(tokens) > 0 and len(tokens) != 2:
-                        raise ValueError(
-                            f"line({linenu} variable values should have no spaces. `{variable_name} {variable_value_no_space}`"
-                        )
-                    else:
-                        context[SECTION_DECLARATIONS][tokens[0]] = " ".join(tokens[1:])
+                    if len(tokens) > 0:
+                        if len(tokens) != 2:
+                            raise ValueError(
+                                f"line({linenu}) variable values should have no spaces. `{tokens[0]} VALUE`"
+                            )
+                        else:
+                            context[SECTION_DECLARATIONS][tokens[0]] = " ".join(
+                                tokens[1:]
+                            )
 
             #####################
             # PATH / USE
