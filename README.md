@@ -7,7 +7,7 @@ Still WIP.
 
 **Deployment script should be called from the foundry project with the build artifacts present at `out/`.**
 
-**For the lexicon check both: [FD Script](#fd-script) and [example/deploy.fd](./example/deploy.fd)**
+**For the lexicon check both: [FD Script](#fd-script) (real-use) and [example/deploy.fd](./example/deploy.fd) (expands on available vocabulary)** 
 
 ## Table of Contents
 - [foundrydeploy](#foundrydeploy)
