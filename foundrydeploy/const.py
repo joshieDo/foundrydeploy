@@ -7,6 +7,7 @@ SECTION_CONTRACTS = ".contracts"
 SECTION_SIGNER = ".signer"
 SECTION_DEPLOYER = ".deployer"
 SECTION_PATH = ".use"
+SECTION_DECLARATIONS = ".declare"
 
 SECTIONS = [
     SECTION_ID,
@@ -14,6 +15,7 @@ SECTIONS = [
     SECTION_SIGNER,
     SECTION_DEPLOYER,
     SECTION_PATH,
+    SECTION_DECLARATIONS,
 ]
 
 #####################
