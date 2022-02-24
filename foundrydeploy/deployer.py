@@ -34,6 +34,7 @@ class Deployer:
         self.addresses = {}
         self.contract_signatures = {}
         self.transactions = []
+        self.context = {}
 
         # Load from cache if it exists
         self.cache_path = (
@@ -95,7 +96,6 @@ class Deployer:
             self.contracts = deployer.contracts
             self.addresses = deployer.addresses
             self.contract_signatures = deployer.contract_signatures
-            self.transactions = self.transactions
 
         except FileNotFoundError:
             _info(f"# Starting cache at `{cache_path}`")
@@ -243,12 +243,18 @@ class Deployer:
         Calls `$ cast send`
         """
 
-        contract_path = self.contracts[contract_label]
-
         function_name = _args[0]
 
         # Get function signature if not given
         if "(" not in function_name:
+
+            if contract_label not in self.contracts:
+                raise ValueError(
+                    f"{contract_label} has no contract specified, so you need to specify the function signature"
+                )
+
+            contract_path = self.contracts[contract_label]
+
             if function_name not in self.contract_signatures[contract_path]:
                 raise ValueError(f"{function_name} does not exist in {contract_path}")
 

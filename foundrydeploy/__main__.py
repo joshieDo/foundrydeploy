@@ -11,3 +11,4 @@ with open(sys.argv[1], "r") as f:
         parse(f.read())
     except ValueError as e:
         _error(e)
+        raise e

@@ -28,7 +28,14 @@ def _sharing_is_caring():
         DEPLOYERS[deployer].addresses.update(addresses)
 
 
-def _load_arguments(is_send: bool, arguments: list):
+def _is_declaration(arg: str, declarations: dict):
+    if arg.startswith("@"):
+        return declarations[arg[1:]]
+    else:
+        return arg
+
+
+def _load_arguments(is_send: bool, arguments: list, declarations: dict):
     args = []
     if is_send:
 
@@ -40,6 +47,7 @@ def _load_arguments(is_send: bool, arguments: list):
             function_name = arguments[0]
             arguments = arguments[1]
 
+        function_name = _is_declaration(function_name, declarations)
         args.append(function_name)
 
     if not arguments.startswith("(") or not arguments.endswith(")"):
@@ -49,6 +57,8 @@ def _load_arguments(is_send: bool, arguments: list):
 
     for arg in arguments:
         arg = arg.strip()
+
+        arg = _is_declaration(arg, declarations)
 
         # check if * is present
         # 00*2 -> 0000
@@ -164,7 +174,7 @@ def parse(script: str):
 
     next_section = 0
 
-    context = {}
+    context = {SECTION_DECLARATIONS: {}}
     paths = []
     missing_fields = []
 
@@ -357,6 +367,25 @@ def parse(script: str):
                     )
 
             #####################
+            # DECLARATIONS
+            #####################
+
+            elif current_section == SECTION_DECLARATIONS:
+                if line.startswith(SECTION_DECLARATIONS):
+                    if SECTION_DECLARATIONS not in context:
+                        context[SECTION_DECLARATIONS] = {}
+                else:
+                    if len(tokens) > 0:
+                        if len(tokens) != 2:
+                            raise ValueError(
+                                f"line({linenu}) variable values should have no spaces. `{tokens[0]} VALUE`"
+                            )
+                        else:
+                            context[SECTION_DECLARATIONS][tokens[0]] = " ".join(
+                                tokens[1:]
+                            )
+
+            #####################
             # PATH / USE
             #####################
 
@@ -385,7 +414,9 @@ def parse(script: str):
                     contract_label = tokens[1]
 
                     if line.startswith(SECTION_PATH_DEPLOY):
-                        arguments = _load_arguments(False, tokens[2])
+                        arguments = _load_arguments(
+                            False, tokens[2], context[SECTION_DECLARATIONS]
+                        )
                         current_path.append(
                             (Deployer.DEPLOY, contract_label, arguments)
                         )
@@ -393,7 +424,9 @@ def parse(script: str):
                         arguments = tokenize(
                             line.split(tokens[0] + " " + tokens[1])[1].strip()
                         )
-                        arguments = _load_arguments(True, arguments)
+                        arguments = _load_arguments(
+                            True, arguments, context[SECTION_DECLARATIONS]
+                        )
                         current_path.append((Deployer.SEND, contract_label, arguments))
                     else:
                         raise ValueError(
