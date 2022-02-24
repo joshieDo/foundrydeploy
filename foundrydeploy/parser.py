@@ -53,7 +53,7 @@ def _load_arguments(is_send: bool, arguments: list, declarations: dict):
     if not arguments.startswith("(") or not arguments.endswith(")"):
         raise ValueError(f"arguments which should start with `(` and end with `)`")
 
-    arguments = arguments[1:-1].split(",")
+    arguments = tokenize(arguments[1:-1], ",", ["[", "]"])
 
     for arg in arguments:
         arg = arg.strip()
@@ -86,7 +86,7 @@ def _remove_field(field: str, missing_fields: list):
     return missing_fields
 
 
-def tokenize(line: str):
+def tokenize(line: str, delim=" ", ignore=["(", ")"]):
     tokens = []
 
     NO_SKIP = ""
@@ -98,12 +98,12 @@ def tokenize(line: str):
 
         if close_skip == NO_SKIP and ch == '"':
             close_skip = ch
-        if close_skip == NO_SKIP and ch == "(":
-            close_skip = ")"
+        if close_skip == NO_SKIP and ch == ignore[0]:
+            close_skip = ignore[1]
         elif ch == close_skip:
             close_skip = NO_SKIP
 
-        if ch == " " and close_skip == NO_SKIP:
+        if ch == delim and close_skip == NO_SKIP:
             tokens.append(token)
             token = ""
         else:
@@ -414,6 +414,10 @@ def parse(script: str):
                     contract_label = tokens[1]
 
                     if line.startswith(SECTION_PATH_DEPLOY):
+                        if len(tokens) != 3:
+                            raise ValueError(
+                                f"linenu({linenu}) deploy command should have the following format `deploy contract_label (args...)"
+                            )
                         arguments = _load_arguments(
                             False, tokens[2], context[SECTION_DECLARATIONS]
                         )

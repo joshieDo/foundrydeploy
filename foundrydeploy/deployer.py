@@ -75,8 +75,13 @@ class Deployer:
             _info(self.contract_signatures)
 
     def _handle_arg(self, arg: str) -> str:
+        if arg.startswith("[") and arg.endswith("]"):
+            args = []
+            for _arg in arg[1:-1].split(","):
+                args.append(self._handle_arg(_arg))
+            arg = "[" + ",".join(args) + "]"
 
-        if arg.startswith("$"):
+        elif arg.startswith("$"):
             contract_label = arg[1:]
             arg = f"{self.addresses[contract_label]}"
 
@@ -227,7 +232,10 @@ class Deployer:
         # Stringify arguments
         const = ""
         for arg in args:
-            const += f"--constructor-args {self._handle_arg(arg)} "
+            arg = self._handle_arg(arg)
+            if arg.startswith("[") and arg.endswith("]"):
+                arg = f'"{arg}"'
+            const += f"--constructor-args {arg} "
 
         _info(f"{self.name} | Deploying | ${contract_label}...")
 
@@ -269,7 +277,10 @@ class Deployer:
         # Stringify arguments
         args = ""
         for index, arg in enumerate(_args):
-            args += f" {self._handle_arg(arg)} "
+            arg = self._handle_arg(arg)
+            if arg.startswith("[") and arg.endswith("]"):
+                arg = f'"{arg}"'
+            args += f" {arg} "
 
         result = self.run(
             f"cast send {address} {self.rpc} {self.is_legacy} {self.signer.get()} {args}"
