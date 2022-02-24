@@ -27,7 +27,8 @@ Still WIP.
 * Declare limited variables
 * Contract labels
 * Only requires the function name if the contract is declared with a path. Extracts the ABI present at `out/***.sol/***.json`
-* Using labels as **arguments** requires preceeding it with "$". eg: `$LABEL1`
+* Using address labels as **arguments** requires preceeding it with "$". eg: `$LABEL1`
+* Using declared variables as **arguments** requires preceeding it with "@". eg: `@PARAMETER`
 * Signer public keys can be used as an argument by invoking it as such: `#PUB`
 
 ### Install
