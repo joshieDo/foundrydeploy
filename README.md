@@ -34,7 +34,7 @@ $ python -m foundrydeploy deploy.fd
 ```
 
 deploy.fd
-```
+```ruby
 .id
 
 .contracts
