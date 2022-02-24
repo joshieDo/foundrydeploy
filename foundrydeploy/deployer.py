@@ -1,5 +1,7 @@
 import pickle, json, subprocess, hashlib
+from loguru import logger
 from . import Signer
+from .log import _info, _debug, _error
 
 
 class Deployer:
@@ -20,12 +22,12 @@ class Deployer:
         no_cache=False,
         name="",
     ):
-        print("#####")
+        _info("#####")
         self.name = name
         if len(name) > 0:
-            print(f"# Deployer: `{name}`")
+            _info(f"# Deployer: `{name}`")
 
-        print(f"# RPC: `{rpc}`")
+        _info(f"# RPC: `{rpc}`")
 
         self.rpc = rpc
         self.contracts = {}
@@ -51,25 +53,25 @@ class Deployer:
         if is_legacy:
             self.is_legacy = "--legacy"
 
-        print("#####\n")
+        _info("#####\n")
 
     ###########################
     # Helpers
     ###########################
 
     def print_details(self, sigs: bool = False):
-        print(
-            f"""\n
-# Transaction Sequence
-{self.transactions}
-
-# Addresses
+        _info(
+            f"""# Transaction Sequence
+{self.transactions}"""
+        )
+        _info(
+            f"""# Addresses
 {self.addresses}"""
         )
 
         if sigs:
-            print(self.contracts)
-            print(self.contract_signatures)
+            _info(self.contracts)
+            _info(self.contract_signatures)
 
     def _handle_arg(self, arg: str) -> str:
 
@@ -89,14 +91,14 @@ class Deployer:
     def load_from_cache(self, cache_path):
         try:
             deployer = Deployer.load(cache_path)
-            print(f"# Loading cache at `{cache_path}`")
+            _info(f"# Loading cache at `{cache_path}`")
             self.contracts = deployer.contracts
             self.addresses = deployer.addresses
             self.contract_signatures = deployer.contract_signatures
             self.transactions = self.transactions
 
         except FileNotFoundError:
-            print(f"# Starting cache at `{cache_path}`")
+            _info(f"# Starting cache at `{cache_path}`")
             pass
 
     def load(cache_path):
@@ -166,24 +168,25 @@ class Deployer:
     ###########################
 
     def run(self, cmd: str):
-        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+        proc = subprocess.Popen(
+            cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE
+        )
         result = (proc.stdout.read()).decode()
-        if self.debug:
-            print(
-                f"""
-            # `{cmd}`
-            ##
-            $ `{result}`
-            --
-            """
-            )
+        err = (proc.stderr.read()).decode()
+
         proc.wait()
 
         if not proc.returncode == 0:
             self.save()
-            print(f"FAILED:\n{cmd}\n\n###\n\n{result}\n\r")
+            proc.wait()
+
+            _error(f"command:\n{cmd}")
+            _error(f"result:\n{err}\n\r")
             self.print_details()
             exit(1)
+        elif self.debug:
+            _debug(f"command:\n{cmd}")
+            _debug(f"result:\n{result}\n\r")
 
         return result
 
@@ -214,7 +217,7 @@ class Deployer:
 
         # Skips deployment if there's an address cached for this contract label
         if contract_label in self.addresses:
-            print(
+            _info(
                 f"Skipping ${contract_label} deployment. Has address: {self.addresses[contract_label]}"
             )
             return self.addresses[contract_label]
@@ -226,7 +229,7 @@ class Deployer:
         for arg in args:
             const += f"--constructor-args {self._handle_arg(arg)} "
 
-        print(f"{self.name} | Deploying | ${contract_label}...")
+        _info(f"{self.name} | Deploying | ${contract_label}...")
 
         # Call `forge create`
         result = self.run(
@@ -255,7 +258,7 @@ class Deployer:
         else:
             _args[0] = '"' + function_name + '"'
 
-        print(f"{self.name} | Sending   | ${contract_label} {function_name}(...) ")
+        _info(f"{self.name} | Sending   | ${contract_label} {function_name}(...) ")
 
         # Stringify arguments
         args = ""

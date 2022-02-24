@@ -20,8 +20,8 @@
 
 .deployer myDeployer2
     legacy
+    debug
     # no_cache
-    # debug
 
     network local
     # network fuji
