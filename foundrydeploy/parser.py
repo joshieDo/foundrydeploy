@@ -1,5 +1,6 @@
 from .const import *
 from . import Signer, Network, TEST_SIGNER, KeyKind, Deployer
+from .log import _info
 
 #####################
 # Context
@@ -400,13 +401,13 @@ def parse(script: str):
                         )
         except Exception as e:
             if linenu != num_lines:
-                raise ValueError(f"##\nerror:\nline:{linenu}\n{line}\n{e}")
-            raise ValueError(f"##\nerror:\n{e}")
+                raise ValueError(f"\nline:{linenu}\n{line}\n{e}")
+            raise ValueError(f"\n{e}")
 
     try:
         if current_section == SECTION_PATH:
             if type(current_deployer) != str and len(current_path) > 0:
                 current_deployer.path(current_path)
     except Exception as e:
-        print(current_path)
+        _info(current_path)
         raise ValueError(f"##\nerror:\n{e}")

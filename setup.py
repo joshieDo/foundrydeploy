@@ -9,6 +9,6 @@ setup(
     author_email="",
     license="",
     packages=["foundrydeploy"],
-    install_requires=[],
+    install_requires=["loguru==0.6.0"],
     classifiers=[],
 )
