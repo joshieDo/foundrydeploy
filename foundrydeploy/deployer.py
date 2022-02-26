@@ -86,7 +86,7 @@ class Deployer:
             arg = f"{self.addresses[contract_label]}"
 
         elif arg.startswith("#PUB"):
-            arg = f"{self.signer.pub()}"
+            arg = f"{self.signer.public_key()}"
 
         return arg
 

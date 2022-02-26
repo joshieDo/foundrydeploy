@@ -23,7 +23,7 @@ class Signer:
     def get(self) -> str:
         return f"{self.key_kind} {self.key_argument}"
 
-    def pub(self) -> str:
+    def public_key(self) -> str:
         return self.pub
 
 
