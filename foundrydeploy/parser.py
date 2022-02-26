@@ -58,7 +58,14 @@ def _load_arguments(is_send: bool, arguments: list, declarations: dict):
     for arg in arguments:
         arg = arg.strip()
 
-        arg = _is_declaration(arg, declarations)
+        # list parameter with declaration
+        if arg.startswith("[") and arg.endswith("]"):
+            _args = []
+            for _arg in arg[1:-1].split(","):
+                _args.append(_is_declaration(_arg, declarations))
+            arg = "[" + ",".join(_args) + "]"
+        else:
+            arg = _is_declaration(arg, declarations)
 
         # check if * is present
         # 00*2 -> 0000
